@@ -10,7 +10,10 @@ module Program =
     let CreateHostBuilder args =
         Host.CreateDefaultBuilder(args)
             .ConfigureLogging(fun logging -> logging.AddConsole() |> ignore)
-            .ConfigureWebHostDefaults(fun webBuilder -> webBuilder.UseStartup<Startup>() |> ignore)
+            .ConfigureWebHostDefaults(fun webBuilder ->
+                webBuilder
+                    .UseStartup<Startup>()
+                    .UseUrls("http://*:5000;https://*:5001")|> ignore)
 
     [<EntryPoint>]
     let main args =
