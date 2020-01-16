@@ -1,38 +1,23 @@
 namespace TinkerIo
 
 open System
+open System.IO
 
+type Db = string
 type Key = string
 type Content = string
 type HashCode = string
 
 type DbRequest =
-    | Create  of (Key * Content)
-    | Read    of  Key
-    | Replace of (Key * Content)
-    | Update  of (Key * Content * HashCode)
-    | Delete  of  Key
+    | Create  of (Db * Key * Content)
+    | Read    of (Db * Key)
+    | Replace of (Db * Key * Content)
+    | Update  of (Db * Key * Content * HashCode)
+    | Delete  of (Db * Key)
 
 module private DbHelpers =
 
     type Message = DbRequest * Control.AsyncReplyChannel<DbResponse>
-
-    let defaultWriters = 1000
-
-    let overrideWriters =
-        Environment.GetEnvironmentVariable("TINKERIO_MAX_WRITERS")
-        |> Option.ofObj
-        |> Option.map Int32.Parse
-
-    let containeredWriters =
-        Environment.GetEnvironmentVariable("TINKERIO_CONTAINERED")
-        |> Option.ofObj
-        |> Option.map (fun _ -> 100)
-
-    let maxWriters =
-        overrideWriters
-        |> Option.orElse containeredWriters
-        |> Option.defaultValue defaultWriters
 
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
@@ -53,16 +38,24 @@ module private DbHelpers =
             messageLoop())
         (id, writer)
 
+    let dbOf (request: DbRequest) =
+        match request with
+        | Create  (db, _, _)    -> db
+        | Read    (db, _)       -> db
+        | Replace (db, _, _)    -> db
+        | Update  (db, _, _, _) -> db
+        | Delete  (db, _)       -> db
+
     let keyOf (request: DbRequest) =
         match request with
-        | Create  (key, _)    -> key
-        | Read     key        -> key
-        | Replace (key, _)    -> key
-        | Update  (key, _, _) -> key
-        | Delete   key        -> key
+        | Create  (_, key, _)    -> key
+        | Read    (_, key)       -> key
+        | Replace (_, key, _)    -> key
+        | Update  (_, key, _, _) -> key
+        | Delete  (_, key)       -> key
 
-    let indexOf maxWriters key =
-        let hash  = key.GetHashCode()
+    let indexOf maxWriters db key =
+        let hash  = (db + key).GetHashCode()
         let index = hash % maxWriters |> Math.Abs
         index
 
@@ -72,13 +65,14 @@ module Db =
 
     let private writers =
         seq {
-            for id in [0 .. maxWriters - 1] do
+            for id in [0 .. Config.Writers - 1] do
                 yield makeWriter id
         } |> dict
 
     let post (request: DbRequest) : Async<DbResponse> = async {
+        let db       = dbOf request
         let key      = keyOf request
-        let index    = indexOf maxWriters key
+        let index    = indexOf Config.Writers db key
         let response = writers.[index].PostAndAsyncReply (fun channel -> request, channel)
 
         return! response

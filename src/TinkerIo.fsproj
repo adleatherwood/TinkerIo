@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Logic/Util.fs" />
     <Compile Include="Logic/Hash.fs" />
+    <Compile Include="Logic/Config.fs" />
     <Compile Include="Logic/FileIo.fs" />
     <Compile Include="Logic/FileDb.fs" />
     <Compile Include="Logic/Db.fs" />
