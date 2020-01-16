@@ -14,15 +14,12 @@ module FileIo =
 
     let rec write filename content : AsyncResult<unit> = async {
         try
-            try
-                File.WriteAllTextAsync(filename, content) |> Async.AwaitTask |> ignore
-                return Ok ()
-            with
-            | :? DirectoryNotFoundException ->
-                FileInfo(filename).DirectoryName |> Directory.CreateDirectory |> ignore
-                return! write filename content
-            | e -> return Error e.Message
+            File.WriteAllTextAsync(filename, content) |> Async.AwaitTask |> ignore
+            return Ok ()
         with
+        | :? DirectoryNotFoundException ->
+            FileInfo(filename).DirectoryName |> Directory.CreateDirectory |> ignore
+            return! write filename content
         | e -> return Error e.Message
     }
 
