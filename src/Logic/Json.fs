@@ -3,12 +3,12 @@ namespace TinkerIo
 open Newtonsoft.Json.Linq
 
 type JsonResponse = {
-        Key      : string
-        Hash     : string
-        Success  : bool
-        Message  : string
-        Document : JRaw
-        }
+    Key      : string
+    Hash     : string
+    Success  : bool
+    Message  : string
+    Document : JRaw
+    }
 
 module Json =
 

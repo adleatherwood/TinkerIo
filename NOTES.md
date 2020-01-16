@@ -29,3 +29,9 @@ password
 https://www.atlascode.com/blog/running-asp-net-core-in-an-alpine-linux-docker-container/
 
 ASPNETCORE_URLS="http://0.0.0.0:5000
+
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel LTS --runtime dotnet --architecture arm
+
+dotnet publish -c Release -r win10-x64 /p:PublishSingleFile=true /p:PublishTrimmed=true
+
+ https://auth0.com/blog/build-an-api-in-rust-with-jwt-authentication-using-nickelrs/
