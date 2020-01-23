@@ -1,7 +1,6 @@
-namespace TinkerIo
+namespace TinkerIo.Store
 
 open System
-open System.IO
 
 type Db = string
 type Key = string
@@ -15,9 +14,9 @@ type DbRequest =
     | Update  of (Db * Key * Content * HashCode)
     | Delete  of (Db * Key)
 
-module private DbHelpers =
+module private StoreHelpers =
 
-    type Message = DbRequest * Control.AsyncReplyChannel<DbResponse>
+    type Message = DbRequest * Control.AsyncReplyChannel<StoreResult>
 
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
@@ -25,11 +24,11 @@ module private DbHelpers =
                 let! request, channel = inbox.Receive()
                 let! response =
                     match request with
-                    | Create  c -> FileDb.create  c
-                    | Read    r -> FileDb.read    r
-                    | Replace r -> FileDb.replace r
-                    | Update  u -> FileDb.update  u
-                    | Delete  d -> FileDb.delete  d
+                    | Create  c -> StoreAction.create  c
+                    | Read    r -> StoreAction.read    r
+                    | Replace r -> StoreAction.replace r
+                    | Update  u -> StoreAction.update  u
+                    | Delete  d -> StoreAction.delete  d
 
                 channel.Reply response
 
@@ -59,20 +58,21 @@ module private DbHelpers =
         let index = hash % maxWriters |> Math.Abs
         index
 
-module Db =
+module Store =
 
-    open DbHelpers
+    open StoreHelpers
+    open TinkerIo
 
     let private writers =
         seq {
-            for id in [0 .. Config.Writers - 1] do
+            for id in [0 .. Config.StoreWriters - 1] do
                 yield makeWriter id
         } |> dict
 
-    let post (request: DbRequest) : Async<DbResponse> = async {
+    let post (request: DbRequest) = async {
         let db       = dbOf request
         let key      = keyOf request
-        let index    = indexOf Config.Writers db key
+        let index    = indexOf Config.StoreWriters db key
         let response = writers.[index].PostAndAsyncReply (fun channel -> request, channel)
 
         return! response

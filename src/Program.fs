@@ -13,9 +13,18 @@ module Program =
             .ConfigureWebHostDefaults(fun webBuilder ->
                 webBuilder
                     .UseStartup<Startup>()
-                    .UseUrls("http://*:5000;https://*:5001")|> ignore)
+                    .UseUrls(sprintf "http://*:%i" Config.Port) |> ignore)
 
     [<EntryPoint>]
     let main args =
+        printfn ""
+        printfn "CONFIGURATION"
+        printfn "------------------------------------------------------------------------"
+        printfn "   STORE   : %s" Config.StoreRoot
+        printfn "   STREAM  : %s" Config.StreamRoot
+        printfn "   WRITERS : %i" Config.StoreWriters
+        printfn "   PORT    : %i" Config.Port
+        printfn "------------------------------------------------------------------------"
+
         CreateHostBuilder(args).Build().Run()
         exitCode

@@ -1,29 +1,30 @@
-namespace TinkerIo
+namespace TinkerIo.Store
 
 open System
 open System.IO
+open TinkerIo
 
-type DbSuccess = {
+type StoreSuccess = {
     Key      : string
     Hash     : string
     Content  : string
     }
 
-type DbFailure = {
+type StoreFailure = {
     Key      : string
     Error    : string
     }
 
-type DbResponse =
-    | Success of DbSuccess
-    | Failure of DbFailure
+type StoreResult =
+    | Success of StoreSuccess
+    | Failure of StoreFailure
 
-module private FileDbHelpers =
+module private StoreActionHelpers =
 
     let toFilename db key =
         if String.IsNullOrWhiteSpace(key)
         then None
-        else Some <| Path.Combine(Config.Root, db, key)
+        else Some <| Path.Combine(Config.StoreRoot, db, key)
 
     let toSuccess key content=
         Success {Key = key; Hash = Hash.create content; Content = content}
@@ -62,29 +63,29 @@ module private FileDbHelpers =
         | Ok _    -> toSuccess key ""
         | Error e -> toFailure key e
 
-module FileDb =
+module StoreAction =
 
-    open FileDbHelpers
+    open StoreActionHelpers
 
-    let create (db: string, key: string, content: string) : Async<DbResponse> = async {
+    let create (db: string, key: string, content: string) = async {
         match toFilename db key with
         | IsNew filename -> return! writeAll filename key content
         | _ -> return toFailure key "File already exists"
     }
 
-    let read (db: string, key: string) : Async<DbResponse> = async {
+    let read (db: string, key: string) = async {
         match toFilename db key with
         | IsExisting filename -> return! readAll filename key
         | _ -> return toFailure key "File does not exist"
     }
 
-    let replace (db: string, key: string, content: string) : Async<DbResponse> = async {
+    let replace (db: string, key: string, content: string) = async {
         match toFilename db key with
         | IsExisting filename -> return! writeAll filename key content
         | _ -> return toFailure key "File does not exist"
     }
 
-    let update (db: string, key: string, content: string, hash: string) : Async<DbResponse> = async {
+    let update (db: string, key: string, content: string, hash: string) = async {
         match! read(db, key) with
         | Failure msg -> return Failure msg
         | Success red ->
@@ -93,7 +94,7 @@ module FileDb =
             | _ -> return toFailure key "Hash is out of date"
     }
 
-    let delete (db: string, key: string) : Async<DbResponse> = async {
+    let delete (db: string, key: string) = async {
         return
             match toFilename db key with
             | IsExisting filename -> delete filename key

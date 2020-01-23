@@ -2,19 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <PublishTrimmed>true</PublishTrimmed>
-    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Logic/Util.fs" />
-    <Compile Include="Logic/Hash.fs" />
-    <Compile Include="Logic/Config.fs" />
-    <Compile Include="Logic/FileIo.fs" />
-    <Compile Include="Logic/FileDb.fs" />
-    <Compile Include="Logic/Db.fs" />
-    <Compile Include="Logic/Json.fs" />
-    <Compile Include="Controllers/DbController.fs" />
+    <Compile Include="Common/Util.fs" />
+    <Compile Include="Common/Hash.fs" />
+    <Compile Include="Common/Config.fs" />
+    <Compile Include="Common/FileIo.fs" />
+    <Compile Include="Store/StoreAction.fs" />
+    <Compile Include="Store/Store.fs" />
+    <Compile Include="Store/StoreConvert.fs" />
+    <Compile Include="Store/StoreController.fs" />
+    <Compile Include="Stream/Stream.fs" />
+    <Compile Include="Stream/StreamConvert.fs" />
+    <Compile Include="Stream/StreamController.fs" />
     <Compile Include="Startup.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

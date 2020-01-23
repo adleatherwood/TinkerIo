@@ -14,8 +14,10 @@ module String =
     let toLower (s: string) =
         s.ToLower()
 
-    let startsWithCi (find: string) (s: string) =
-        s.StartsWith(find, StringComparison.CurrentCultureIgnoreCase)
-
     let splitSnd (splitter: char) (s: string) =
         s.Split(splitter).[1]
+
+module StringCi =
+
+    let startsWith (find: string) (s: string) =
+        s.StartsWith(find, StringComparison.CurrentCultureIgnoreCase)

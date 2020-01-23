@@ -1,8 +1,8 @@
 namespace TinkerIo
 
-module FileIo =
+open System.IO
 
-    open System.IO
+module FileIo =
 
     let read filename : AsyncResult<string> = async {
         try

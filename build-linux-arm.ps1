@@ -1,0 +1,1 @@
+dotnet publish ./src -c Release -r linux-arm /p:PublishSingleFile=true /p:PublishTrimmed=true
