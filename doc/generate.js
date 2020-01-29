@@ -200,6 +200,8 @@ async function main() {
     await api("GET", "/stream/read/myStream/0/2")
 
     p("You will be given the next offset to use in subsequent calls and an indicator that you have reached the end of the stream.")
+
+    p("<div>Icons made by <a href=\"https://www.flaticon.com/authors/pixel-perfect\" title=\"Pixel perfect\">Pixel perfect</a> from <a href=\"https://www.flaticon.com/\" title=\"Flaticon\">www.flaticon.com</a></div>")
 }
 
 main()
