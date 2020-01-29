@@ -15,6 +15,7 @@
     <Compile Include="Store/StoreController.fs" />
     <Compile Include="Stream/Stream.fs" />
     <Compile Include="Stream/StreamConvert.fs" />
+    <Compile Include="Stream/StreamLock.fs" />
     <Compile Include="Stream/StreamController.fs" />
     <Compile Include="Startup.fs" />
     <Compile Include="Program.fs" />
