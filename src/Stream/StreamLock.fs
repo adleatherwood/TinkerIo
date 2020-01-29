@@ -22,8 +22,11 @@ module StreamLock =
         | _ ->
             let i = indexOf(key)
             partitions.[i].Reset()
-            partitions.[i].Wait()
-            return! Wait key f
+            match! f() with
+            | Some result -> return result
+            | _ ->
+                partitions.[i].Wait()
+                return! Wait key f
         }
 
     let Signal(key: string) =
