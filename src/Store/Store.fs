@@ -7,6 +7,7 @@ type Key = string
 type Content = string
 type HashCode = string
 
+// todo: rename StoreRequest
 type DbRequest =
     | Create  of (Db * Key * Content)
     | Read    of (Db * Key)
@@ -18,6 +19,7 @@ module private StoreHelpers =
 
     type Message = DbRequest * Control.AsyncReplyChannel<StoreResult>
 
+    // todo: rename worker here and in config
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
             let rec messageLoop() = async{

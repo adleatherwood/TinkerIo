@@ -11,22 +11,30 @@ type StreamController() =
 
     [<HttpPost("append/{stream}")>]
     member __.Append(stream: string, [<FromBody>] content: JRaw) = async {
-        let! result = Stream.append stream (content.ToString())
+        let request = Request.Append (stream, content.ToString())
+        let! result = Stream.post request
 
         StreamLock.Signal stream
 
         return StreamConvert.toJson result
     }
 
-    [<HttpGet("read/{stream}/{offset}/{max}")>]
-    member __.Read(stream: string, offset: uint32, max: uint32) = async {
-        let! result = StreamLock.Wait stream (fun () ->
-            async {
-                let! r = Stream.read stream offset max
-                if r.Entries.Length = 0
-                then return None
-                else return Some r
-            })
+    [<HttpGet("read/{stream}/{offset}/{count}")>]
+    member __.Read(stream: string, offset: uint32, count: uint32) = async {
+        let! result = StreamLock.WaitTil stream (fun () -> async {
+            let request = Request.Read (stream, offset, count)
+            let! result = Stream.post request
+            match result with
+            | Read (_,_,_,entries) ->
+                if entries.Length > 0
+                then return Some result
+                else return None
+            | Failure f -> return Some result
+            | _ -> return None
+        })
 
-        return result
+        // let request = Request.Read (stream, offset, count)
+        // let! result = Stream.post request
+
+        return StreamConvert.toJson result
     }

@@ -16,19 +16,17 @@ module StreamLock =
         key.GetHashCode() % maxPartitions
         |> Math.Abs
 
-    let rec Wait(key: string) (f: unit -> Async<'a option>) : Async<'a> =  async {
+    let rec WaitTil(key: string) (f: unit -> Async<'a option>) : Async<'a> =  async {
         match! f() with
         | Some result -> return result
-        | _ ->
+        | None ->
             let i = indexOf(key)
             partitions.[i].Reset()
-            match! f() with
-            | Some result -> return result
-            | _ ->
-                partitions.[i].Wait()
-                return! Wait key f
+            partitions.[i].Wait()
+            return! WaitTil key f
         }
 
     let Signal(key: string) =
         let i = indexOf key
         partitions.[i].Set()
+

@@ -214,9 +214,8 @@ POST http://localhost:5000/stream/append/myStream
 STATUS: 200
 
 {
-  "offset": 0,
-  "success": true,
-  "message": ""
+  "stream": "myStream",
+  "offset": 0
 }
 ```
 The offset is an unsigned int and will increment internally
@@ -231,9 +230,8 @@ POST http://localhost:5000/stream/append/myStream
 STATUS: 200
 
 {
-  "offset": 1,
-  "success": true,
-  "message": ""
+  "stream": "myStream",
+  "offset": 1
 }
 ```
 ### Method: Read
@@ -246,24 +244,27 @@ GET http://localhost:5000/stream/read/myStream/0/2
 STATUS: 200
 
 {
+  "stream": "myStream",
+  "next": 2,
+  "isEnd": true,
   "entries": [
     {
       "offset": 0,
+      "isEnd": false,
+      "error": null,
       "document": {
         "nameSet": "philo"
-      },
-      "isEnd": false
+      }
     },
     {
       "offset": 1,
+      "isEnd": true,
+      "error": null,
       "document": {
         "nameChanged": "kronos"
-      },
-      "isEnd": true
+      }
     }
-  ],
-  "next": 2,
-  "isEnd": true
+  ]
 }
 ```
 You will be given the next offset to use in subsequent calls and an indicator that you have reached the end of the stream.
