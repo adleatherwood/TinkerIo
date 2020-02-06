@@ -14,14 +14,14 @@ type StreamController() =
         let request = Request.Append (stream, content.ToString())
         let! result = Stream.post request
 
-        StreamLock.Signal stream
+        Lock.Signal stream
 
         return StreamConvert.toJson result
     }
 
     [<HttpGet("read/{stream}/{offset}/{count}")>]
     member __.Read(stream: string, offset: uint32, count: uint32) = async {
-        let! result = StreamLock.WaitTil stream (fun () -> async {
+        let! result = Lock.WaitTil stream (fun () -> async {
             let request = Request.Read (stream, offset, count)
             let! result = Stream.post request
             match result with
