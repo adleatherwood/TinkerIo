@@ -22,7 +22,6 @@ type Request =
     | Read   of (Stream * Offset * Count)
 
 type Entry = {
-    // todo fix casing
     Offset    : uint32
     IsEnd     : bool
     Error     : string
@@ -74,7 +73,6 @@ module private Index =
         match committed.TryGetValue(stream) with
         | (true, list) -> if list.Length > 0 then list.[0] else 0u
         | _ -> 0u
-        //streams.GetOrAdd(stream, 0u)
 
     let private compress(list: uint32 list) =
         let sorted = List.sort list
@@ -91,8 +89,6 @@ module private Index =
 
     let commit(stream: string) (offset: uint32) : unit =
         committed.AddOrUpdate(stream, (fun _ -> [0u]), (fun _ list -> offset :: list |> compress)) |> ignore
-        //StreamLock.Signal stream
-
 
     let traverse(stream: string) (start: uint32) (max: uint32) =
         seq {
@@ -119,15 +115,15 @@ module private Index =
 module private StreamAction =
 
     let Append(stream: string, content: string) = async {
-        let index = Index.next(stream) // todo rename offset
-        let filename = Index.toFilepath stream index
+        let offset = Index.next(stream)
+        let filename = Index.toFilepath stream offset
         let! result = FileIo.write filename content
 
-        Index.commit stream index
+        Index.commit stream offset
 
         return
             match result with
-            | Ok _        -> Append  (stream, index)
+            | Ok _        -> Append  (stream, offset)
             | Error error -> Failure (stream, error)
     }
 
@@ -148,59 +144,14 @@ module private StreamAction =
 
 module private StreamHelpers =
 
-    type Message = Request * Control.AsyncReplyChannel<Response>
-
-    // let makeWorker id =
-    //     let writer = MailboxProcessor<Message>.Start(fun inbox ->
-    //         let rec messageLoop() = async{
-    //             let! request, channel = inbox.Receive()
-    //             let! response =
-    //                 match request with
-    //                 | Request.Append a -> StreamAction.Append a
-    //                 | Request.Read   r -> StreamAction.Read   r
-
-    //             channel.Reply response
-
-    //             return! messageLoop()
-    //         }
-    //         messageLoop())
-    //     (id, writer)
-
-    // let private roundup(offset: Offset) : Partition =
-    //     let d = decimal offset
-    //     Math.Floor((d + 10m) / 10m) * 10m |> uint32
-
     let streamOf (request: Request) =
         match request with
         | Request.Append (stream, _)    -> stream
         | Request.Read   (stream, _, _) -> stream
 
-    // let partitionOf (request: Request) : Partition =
-    //     match request with
-    //     | Request.Append (stream, _)        -> Index.last stream |> roundup
-    //     | Request.Read   (_, offset, count) -> offset + count - 1u |> roundup
-
-    // let indexOf (workers: int) (stream: Stream) (partition: Partition) =
-    //     let hash  = (sprintf "%s%i" stream partition).GetHashCode()
-    //     let index = hash % workers |> Math.Abs
-    //     index
-
 module Stream =
 
-    open StreamHelpers
-
-    // let private workers =
-    //     seq {
-    //         // todo: make separate config
-    //         for id in [0 .. Config.StoreWriters - 1] do
-    //             yield makeWorker id
-    //     } |> dict
-
     let post (request: Request) = async {
-        // let stream    = streamOf request
-        // let partition = partitionOf request
-        // let index     = indexOf Config.StoreWriters stream partition
-        // let response  = workers.[index].PostAndAsyncReply (fun channel -> request, channel)
         let! response =
             match request with
             | Request.Append a -> StreamAction.Append a

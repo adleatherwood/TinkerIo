@@ -5,7 +5,7 @@ const name = process.argv[2]
 async function main() {
     let next = 0
 
-    while (next < 10000) {
+    while (next < 1000) {
         let result = await util.api("GET", "/stream/read/test2/" + next + "/10")
 
         next = result.next

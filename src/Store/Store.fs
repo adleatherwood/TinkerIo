@@ -7,8 +7,7 @@ type Key = string
 type Content = string
 type HashCode = string
 
-// todo: rename StoreRequest
-type DbRequest =
+type StoreRequest =
     | Create  of (Db * Key * Content)
     | Read    of (Db * Key)
     | Replace of (Db * Key * Content)
@@ -17,9 +16,8 @@ type DbRequest =
 
 module private StoreHelpers =
 
-    type Message = DbRequest * Control.AsyncReplyChannel<StoreResult>
+    type Message = StoreRequest * Control.AsyncReplyChannel<StoreResult>
 
-    // todo: rename worker here and in config
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
             let rec messageLoop() = async{
@@ -39,7 +37,7 @@ module private StoreHelpers =
             messageLoop())
         (id, writer)
 
-    let dbOf (request: DbRequest) =
+    let dbOf (request: StoreRequest) =
         match request with
         | Create  (db, _, _)    -> db
         | Read    (db, _)       -> db
@@ -47,7 +45,7 @@ module private StoreHelpers =
         | Update  (db, _, _, _) -> db
         | Delete  (db, _)       -> db
 
-    let keyOf (request: DbRequest) =
+    let keyOf (request: StoreRequest) =
         match request with
         | Create  (_, key, _)    -> key
         | Read    (_, key)       -> key
@@ -71,7 +69,7 @@ module Store =
                 yield makeWriter id
         } |> dict
 
-    let post (request: DbRequest) = async {
+    let post (request: StoreRequest) = async {
         let db       = dbOf request
         let key      = keyOf request
         let index    = indexOf Config.StoreWriters db key

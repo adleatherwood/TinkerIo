@@ -33,8 +33,5 @@ type StreamController() =
             | _ -> return None
         })
 
-        // let request = Request.Read (stream, offset, count)
-        // let! result = Stream.post request
-
         return StreamConvert.toJson result
     }
