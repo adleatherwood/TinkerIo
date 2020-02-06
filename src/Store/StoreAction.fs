@@ -22,7 +22,7 @@ type StoreResult =
 module private StoreActionHelpers =
 
     let toFilename db key =
-        if String.IsNullOrWhiteSpace(key)
+        if String.IsNullOrWhiteSpace(db) || String.IsNullOrWhiteSpace(key)
         then None
         else Some <| Path.Combine(Config.StoreRoot, db, key)
 
@@ -99,4 +99,10 @@ module StoreAction =
             match toFilename db key with
             | IsExisting filename -> delete filename key
             | _ -> toSuccess key ""
+    }
+
+    let publish (db: string, key: string, content: string) = async {
+        match toFilename db key with
+        | Some filename -> return! writeAll filename key content
+        | _ -> return toFailure key "Invalid db or key value"
     }

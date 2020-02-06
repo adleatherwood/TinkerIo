@@ -13,6 +13,7 @@ type StoreRequest =
     | Replace of (Db * Key * Content)
     | Update  of (Db * Key * Content * HashCode)
     | Delete  of (Db * Key)
+    | Publish of (Db * Key * Content)
 
 module private StoreHelpers =
 
@@ -29,6 +30,7 @@ module private StoreHelpers =
                     | Replace r -> StoreAction.replace r
                     | Update  u -> StoreAction.update  u
                     | Delete  d -> StoreAction.delete  d
+                    | Publish p -> StoreAction.publish p
 
                 channel.Reply response
 
@@ -44,6 +46,7 @@ module private StoreHelpers =
         | Replace (db, _, _)    -> db
         | Update  (db, _, _, _) -> db
         | Delete  (db, _)       -> db
+        | Publish (db, _, _)    -> db
 
     let keyOf (request: StoreRequest) =
         match request with
@@ -52,6 +55,7 @@ module private StoreHelpers =
         | Replace (_, key, _)    -> key
         | Update  (_, key, _, _) -> key
         | Delete  (_, key)       -> key
+        | Publish (_, key, _)    -> key
 
     let indexOf maxWriters db key =
         let hash  = (db + key).GetHashCode()

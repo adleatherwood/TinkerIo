@@ -177,13 +177,34 @@ async function main() {
 
     await api("DELETE", "/store/delete/myStore/myDocId")
 
+    h3("Method: Publish")
+
+    p("You can publish & subscribe to any document in the store.  In this way you can long-poll for changes and " +
+      "react to them as soon as they occur.")
+
+    await api("PUT", "/store/publish/myStore/myDocId", { "data": "value" })
+
+    p("The behavior of the publish command is the same as performing a `create` or `replace`.  The is no check against the current hash " +
+      "to see if you are the last writer of the document.")
+
+    h3("Method: Subscribe")
+
+    p("When subscribing to a document in a store, you must supply the hash of the previous version of the document or an invalid hash value.  " +
+      "The request will be held for as long as possible until the document hash has changed.  It is up to the client to loop and reconnect in " +
+      "the case of a timeout.  In this manner, you get changes to your document as soon as they occur.")
+
+    await api("GET", "/store/subscribe/myStore/myDocId/c20b1c60f2c69a03b9f687c96b902285")
+
+    p("It should be noted that publishing a document is the only way to notify subscribers of a change.  Simply replacing or updating the " +
+      "document will not trigger the change for subscribers.")
+
     h2("Message Stream Controller")
 
     p("A simple append-only stream that writes each document to an individual file.")
 
     h3("Method: Append")
 
-    p("Simply specify the stream you would like to write to and the content of the message.  " +
+    p("Specify the stream you would like to write to and the content of the message.  " +
       "The stream will be created if it doesn't exist and an index number will be assigned to the written message")
 
     await api("POST", "/stream/append/myStream", { "nameSet": "philo"})

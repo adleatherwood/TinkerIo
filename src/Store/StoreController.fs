@@ -42,3 +42,27 @@ type StoreController() =
         let! reply =  Delete(db, key) |> Store.post
         return StoreConvert.toJson reply
     }
+
+    [<HttpPut("publish/{db}/{key}")>]
+    member __.Publish(db: string, key: string, [<FromBody>] content: JRaw) = async {
+        let! reply = Publish(db, key, content.ToString()) |> Store.post
+
+        Wait.Release (db + key)
+
+        return StoreConvert.toJson reply
+    }
+
+    [<HttpGet("subscribe/{db}/{key}/{hash}")>]
+    member __.Subscribe(db: string, key: string, hash: string) = async {
+        let! result = Wait.Til (db + key) (fun k ->
+            async {
+                match! Read(db, key) |> Store.post with
+                | Success value ->
+                    if value.Hash <> hash
+                    then return Success value  |> Some
+                    else return None
+                | Failure value -> return Failure value |> Some
+            })
+
+        return StoreConvert.toJson result
+    }

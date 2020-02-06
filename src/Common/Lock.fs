@@ -1,4 +1,4 @@
-namespace TinkerIo.Stream
+namespace TinkerIo
 
 open System.Threading
 open System.Collections.Concurrent
@@ -17,21 +17,24 @@ module private LockHelpers =
         lock.Set()
         lock
 
-module Lock =
+module Wait =
 
     open LockHelpers
 
     let locks = ConcurrentDictionary<string, ManualResetEventSlim>()
 
-    let rec WaitTil(key: string) (f: unit -> Async<'a option>) : Async<'a> =  async {
+    let For(key: string) =
+        locks.AddOrUpdate(key, newLock, wait) |> ignore
+
+    let rec Til(key: string) (f: unit -> Async<'a option>) = async {
         match! f() with
         | Some result -> return result
         | None ->
-            locks.AddOrUpdate(key, newLock, wait) |> ignore
-            return! WaitTil key f
+            For key
+            return! Til key f
         }
 
-    let Signal(key: string) =
+    let Release(key: string) =
         locks.AddOrUpdate(key, newLock, set)
         |> ignore
 

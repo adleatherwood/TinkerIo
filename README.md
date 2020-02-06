@@ -196,13 +196,59 @@ STATUS: 200
   "document": {}
 }
 ```
+### Method: Publish
+
+You can publish & subscribe to any document in the store.  In this way you can long-poll for changes and react to them as soon as they occur.
+
+```json
+PUT http://localhost:5000/store/publish/myStore/myDocId
+
+{
+  "data": "value"
+}
+
+STATUS: 200
+
+{
+  "key": "myDocId",
+  "hash": "ab0243cd1e4cdd66d8a625822b744572",
+  "success": true,
+  "message": "",
+  "document": {
+    "data": "value"
+  }
+}
+```
+The behavior of the publish command is the same as performing a `create` or `replace`.  The is no check against the current hash to see if you are the last writer of the document.
+
+### Method: Subscribe
+
+When subscribing to a document in a store, you must supply the hash of the previous version of the document or an invalid hash value.  The request will be held for as long as possible until the document hash has changed.  It is up to the client to loop and reconnect in the case of a timeout.  In this manner, you get changes to your document as soon as they occur.
+
+```json
+GET http://localhost:5000/store/subscribe/myStore/myDocId/c20b1c60f2c69a03b9f687c96b902285
+
+STATUS: 200
+
+{
+  "key": "myDocId",
+  "hash": "ab0243cd1e4cdd66d8a625822b744572",
+  "success": true,
+  "message": "",
+  "document": {
+    "data": "value"
+  }
+}
+```
+It should be noted that publishing a document is the only way to notify subscribers of a change.  Simply replacing or updating the document will not trigger the change for subscribers.
+
 ## Message Stream Controller
 
 A simple append-only stream that writes each document to an individual file.
 
 ### Method: Append
 
-Simply specify the stream you would like to write to and the content of the message.  The stream will be created if it doesn't exist and an index number will be assigned to the written message
+Specify the stream you would like to write to and the content of the message.  The stream will be created if it doesn't exist and an index number will be assigned to the written message
 
 ```json
 POST http://localhost:5000/stream/append/myStream
