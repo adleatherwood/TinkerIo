@@ -61,7 +61,7 @@ STATUS: 200
   "key": "myDocId",
   "hash": "",
   "success": false,
-  "message": "File already exists",
+  "message": "Document already exists",
   "document": {}
 }
 ```
@@ -95,7 +95,7 @@ STATUS: 200
   "key": "doesntExist",
   "hash": "",
   "success": false,
-  "message": "File does not exist",
+  "message": "Document does not exist",
   "document": {}
 }
 ```

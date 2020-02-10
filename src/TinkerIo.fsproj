@@ -8,9 +8,9 @@
     <Compile Include="Common/Util.fs" />
     <Compile Include="Common/Hash.fs" />
     <Compile Include="Common/Config.fs" />
+    <Compile Include="Common/Crud.fs" />
     <Compile Include="Common/FileIo.fs" />
     <Compile Include="Common/Lock.fs" />
-    <Compile Include="Store/StoreAction.fs" />
     <Compile Include="Store/Store.fs" />
     <Compile Include="Store/StoreConvert.fs" />
     <Compile Include="Store/StoreController.fs" />

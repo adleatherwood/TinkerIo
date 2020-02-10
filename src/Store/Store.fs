@@ -1,6 +1,7 @@
 namespace TinkerIo.Store
 
 open System
+open TinkerIo
 
 type Db = string
 type Key = string
@@ -17,7 +18,7 @@ type StoreRequest =
 
 module private StoreHelpers =
 
-    type Message = StoreRequest * Control.AsyncReplyChannel<StoreResult>
+    type Message = StoreRequest * Control.AsyncReplyChannel<CrudResult>
 
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
@@ -25,12 +26,12 @@ module private StoreHelpers =
                 let! request, channel = inbox.Receive()
                 let! response =
                     match request with
-                    | Create  c -> StoreAction.create  c
-                    | Read    r -> StoreAction.read    r
-                    | Replace r -> StoreAction.replace r
-                    | Update  u -> StoreAction.update  u
-                    | Delete  d -> StoreAction.delete  d
-                    | Publish p -> StoreAction.publish p
+                    | Create  c -> Crud.create  FileIo.Services c
+                    | Read    r -> Crud.read    FileIo.Services r
+                    | Replace r -> Crud.replace FileIo.Services r
+                    | Update  u -> Crud.update  FileIo.Services u
+                    | Delete  d -> Crud.delete  FileIo.Services d
+                    | Publish p -> Crud.publish FileIo.Services p
 
                 channel.Reply response
 
@@ -65,7 +66,6 @@ module private StoreHelpers =
 module Store =
 
     open StoreHelpers
-    open TinkerIo
 
     let private writers =
         seq {

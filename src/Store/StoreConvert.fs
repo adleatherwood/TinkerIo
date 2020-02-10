@@ -2,6 +2,7 @@ namespace TinkerIo.Store
 
 open System
 open Newtonsoft.Json.Linq
+open TinkerIo
 
 type JsonResponse = {
     Key      : string
@@ -13,7 +14,7 @@ type JsonResponse = {
 
 module StoreConvert =
 
-    let toJson(result: StoreResult) : JsonResponse =
+    let toJson(result: CrudResult) : JsonResponse =
         match result with
         | Success s ->
             let content =

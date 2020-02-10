@@ -29,7 +29,7 @@ type StreamController() =
                 if entries.Length > 0
                 then return Some result
                 else return None
-            | Failure f -> return Some result
+            | Response.Failure f -> return Some result
             | _ -> return None
         })
 

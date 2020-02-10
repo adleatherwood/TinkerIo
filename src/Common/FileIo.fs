@@ -1,10 +1,19 @@
 namespace TinkerIo
 
+open System
 open System.IO
 
 module FileIo =
 
-    let read filename : AsyncResult<string> = async {
+    let location db key =
+        if String.IsNullOrWhiteSpace(db) || String.IsNullOrWhiteSpace(key)
+        then None
+        else Some <| Path.Combine(Config.StoreRoot, db, key)
+
+    let exists filename =
+        File.Exists filename
+
+    let read filename = async {
         try
             let! content = File.ReadAllTextAsync(filename) |> Async.AwaitTask
             return Ok content
@@ -12,7 +21,7 @@ module FileIo =
         | e -> return Error e.Message
     }
 
-    let rec write filename content : AsyncResult<unit> = async {
+    let rec write filename content = async {
         try
             File.WriteAllTextAsync(filename, content) |> Async.AwaitTask |> ignore
             return Ok ()
@@ -23,8 +32,16 @@ module FileIo =
         | e -> return Error e.Message
     }
 
-    let delete filename : Result<unit> =
+    let delete filename =
         try
             Ok <| File.Delete(filename)
         with
         | e -> Error e.Message
+
+    let Services = {
+        Location = location
+        Exists = exists
+        Write = write
+        Read = read
+        Delete = delete
+    }
