@@ -25,7 +25,7 @@ type StreamController() =
             let request = Request.Read (stream, offset, count)
             let! result = Stream.post request
             match result with
-            | Read (_,_,_,entries) ->
+            | Response.Read (_,_,_,entries) ->
                 if entries.Length > 0
                 then return Some result
                 else return None

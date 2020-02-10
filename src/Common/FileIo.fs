@@ -38,7 +38,7 @@ module FileIo =
         with
         | e -> Error e.Message
 
-    let Services = {
+    let Services : CrudIo = {
         Location = location
         Exists = exists
         Write = write

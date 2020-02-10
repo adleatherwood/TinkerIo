@@ -8,17 +8,9 @@ type Key = string
 type Content = string
 type HashCode = string
 
-type StoreRequest =
-    | Create  of (Db * Key * Content)
-    | Read    of (Db * Key)
-    | Replace of (Db * Key * Content)
-    | Update  of (Db * Key * Content * HashCode)
-    | Delete  of (Db * Key)
-    | Publish of (Db * Key * Content)
-
 module private StoreHelpers =
 
-    type Message = StoreRequest * Control.AsyncReplyChannel<CrudResult>
+    type Message = CrudRequest * Control.AsyncReplyChannel<CrudResult>
 
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
@@ -40,7 +32,7 @@ module private StoreHelpers =
             messageLoop())
         (id, writer)
 
-    let dbOf (request: StoreRequest) =
+    let dbOf (request: CrudRequest) =
         match request with
         | Create  (db, _, _)    -> db
         | Read    (db, _)       -> db
@@ -49,7 +41,7 @@ module private StoreHelpers =
         | Delete  (db, _)       -> db
         | Publish (db, _, _)    -> db
 
-    let keyOf (request: StoreRequest) =
+    let keyOf (request: CrudRequest) =
         match request with
         | Create  (_, key, _)    -> key
         | Read    (_, key)       -> key
@@ -73,7 +65,7 @@ module Store =
                 yield makeWriter id
         } |> dict
 
-    let post (request: StoreRequest) = async {
+    let post (request: CrudRequest) = async {
         let db       = dbOf request
         let key      = keyOf request
         let index    = indexOf Config.StoreWriters db key

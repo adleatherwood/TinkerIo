@@ -33,6 +33,14 @@ type CrudIo = {
     Delete   : Location -> Result<Unit>
 }
 
+type CrudRequest =
+    | Create  of (Db * Key * Content)
+    | Read    of (Db * Key)
+    | Replace of (Db * Key * Content)
+    | Update  of (Db * Key * Content * Hash)
+    | Delete  of (Db * Key)
+    | Publish of (Db * Key * Content)
+
 module private CrudHelpers =
 
     let toSuccess key content =
