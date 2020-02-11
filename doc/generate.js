@@ -125,9 +125,10 @@ async function main() {
     l("./tinkerio --writers=500")
     l("```")
 
-    h2("Document Storage Controller")
+    h2("Document Storage & Cache Controllers")
 
-    p("A simple key value store that writes each document to an individual file.")
+    p("A simple key value store that writes each document to an individual file.  The Storage controller write documents to the configured " +
+      "storage location on disk.  The Cache controller is an in-memory store that has an identical API as the Storage controller.")
 
     h3("Method: Create")
 

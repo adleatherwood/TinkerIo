@@ -2,9 +2,11 @@ namespace TinkerIo.Store
 
 open System
 open TinkerIo
+open TinkerIo.Crud
 
 type Db = string
 type Key = string
+type Hash = string
 type Content = string
 type HashCode = string
 
@@ -16,14 +18,7 @@ module private StoreHelpers =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
             let rec messageLoop() = async{
                 let! request, channel = inbox.Receive()
-                let! response =
-                    match request with
-                    | Create  c -> Crud.create  FileIo.Services c
-                    | Read    r -> Crud.read    FileIo.Services r
-                    | Replace r -> Crud.replace FileIo.Services r
-                    | Update  u -> Crud.update  FileIo.Services u
-                    | Delete  d -> Crud.delete  FileIo.Services d
-                    | Publish p -> Crud.publish FileIo.Services p
+                let! response = Crud.post FileIo.Services request
 
                 channel.Reply response
 

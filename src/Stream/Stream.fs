@@ -2,10 +2,11 @@ namespace TinkerIo.Stream
 
 open System
 open System.IO
+open System.Collections.Generic
 open System.Collections.Concurrent
 open Newtonsoft.Json.Linq
 open TinkerIo
-open System.Collections.Generic
+open TinkerIo.Crud
 
 
 type Stream    = string

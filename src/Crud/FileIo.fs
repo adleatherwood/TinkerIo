@@ -1,7 +1,8 @@
-namespace TinkerIo
+namespace TinkerIo.Crud
 
 open System
 open System.IO
+open TinkerIo
 
 module FileIo =
 

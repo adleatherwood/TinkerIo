@@ -19,9 +19,9 @@ TINKERIO_STORE=~/data
 
 ./tinkerio --writers=500
 ```
-## Document Storage Controller
+## Document Storage & Cache Controllers
 
-A simple key value store that writes each document to an individual file.
+A simple key value store that writes each document to an individual file.  The Storage controller write documents to the configured storage location on disk.  The Cache controller is an in-memory store that has an identical API as the Storage controller.
 
 ### Method: Create
 

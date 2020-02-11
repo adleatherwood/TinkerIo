@@ -1,4 +1,4 @@
-namespace TinkerIo
+namespace TinkerIo.Crud
 
 open System.Collections.Concurrent
 

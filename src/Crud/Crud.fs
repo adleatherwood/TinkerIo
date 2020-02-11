@@ -1,4 +1,4 @@
-namespace TinkerIo
+namespace TinkerIo.Crud
 
 module private CrudLang =
 
@@ -7,23 +7,12 @@ module private CrudLang =
     type Hash     = string
     type Location = string
     type Content  = string
+    type Problem  = string
 
+open System
 open CrudLang
-
-type CrudSuccess = {
-    Key      : string
-    Hash     : string
-    Content  : string
-    }
-
-type CrudFailure = {
-    Key      : string
-    Error    : string
-    }
-
-type CrudResult =
-    | Success of CrudSuccess
-    | Failure of CrudFailure
+open Newtonsoft.Json.Linq
+open TinkerIo
 
 type CrudIo = {
     Location : Db -> Key  -> Location option
@@ -40,6 +29,29 @@ type CrudRequest =
     | Update  of (Db * Key * Content * Hash)
     | Delete  of (Db * Key)
     | Publish of (Db * Key * Content)
+
+type CrudSuccess = {
+    Key      : string
+    Hash     : string
+    Content  : string
+    }
+
+type CrudFailure = {
+    Key      : string
+    Error    : string
+    }
+
+type CrudResult =
+    | Success of CrudSuccess
+    | Failure of CrudFailure
+
+type CrudResponse = {
+    Key      : string
+    Hash     : string
+    Success  : bool
+    Message  : string
+    Document : JRaw
+    }
 
 module private CrudHelpers =
 
@@ -60,8 +72,8 @@ module private CrudHelpers =
         then Some h2
         else None
 
-    let write io filename key content = async {
-        match! io.Write filename content with
+    let write io location key content = async {
+        match! io.Write location content with
         | Ok _    -> return toSuccess key content
         | Error e -> return toFailure key e
     }
@@ -119,3 +131,27 @@ module Crud =
         | Some location -> return! write io location key content
         | _ -> return toFailure key "Invalid db or key value"
     }
+
+    let post (io: CrudIo) (request: CrudRequest) = async {
+        let! response =
+            match request with
+            | Create  c -> create  io c
+            | Read    r -> read    io r
+            | Replace r -> replace io r
+            | Update  u -> update  io u
+            | Delete  d -> delete  io d
+            | Publish p -> publish io p
+        return response
+    }
+
+    let toResponse(result: CrudResult) : CrudResponse =
+        match result with
+        | Success s ->
+            let content =
+                if String.IsNullOrWhiteSpace(s.Content)
+                then "{}"
+                else s.Content
+
+            {Success = true; Message = ""; Key = s.Key; Hash = s.Hash; Document = new JRaw(content)}
+        | Failure f ->
+            {Success = false; Message = f.Error; Key = f.Key; Hash = ""; Document = new JRaw("{}")}
