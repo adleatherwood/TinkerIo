@@ -12,7 +12,7 @@ type CrudController(post: Post) =
     // 409 - conflict
     [<HttpPut("create/{db}/{key}")>]
     member __.Create(db: string, key: string, [<FromBody>] content: JRaw) = async {
-        let! result = Create(db, key, content.ToString()) |> post //Store.post
+        let! result = Create(db, key, content.ToString()) |> post
         return Crud.toResponse result
     }
 

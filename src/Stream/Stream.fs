@@ -1,162 +1,125 @@
 namespace TinkerIo.Stream
 
 open System
-open System.IO
 open System.Collections.Generic
 open System.Collections.Concurrent
-open Newtonsoft.Json.Linq
 open TinkerIo
-open TinkerIo.Crud
+open TinkerIo.Source
+open Newtonsoft.Json.Linq
 
+type Stream = string
 
-type Stream    = string
-type Content   = string
-type Error     = string
-type Offset    = uint32
-type Next      = uint32
-type Partition = uint32
-type Count     = uint32
-type IsEnd     = bool
-
-type Request =
-    | Append of (Stream * Content)
-    | Read   of (Stream * Offset * Count)
-
-type Entry = {
-    Offset    : uint32
-    IsEnd     : bool
-    Error     : string
-    Document  : JRaw
+type StreamInfo = {
+    Last  : uint32
+    List  : SourceEntry list
+    Red   : SourceEntry list
+    IsEnd : bool
     }
 
-type Response =
-    | Append  of (Stream * Offset)
-    | Read    of (Stream * Next * IsEnd * Entry[])
-    | Failure of (Stream * Error)
+module Action =
 
+    let private toi (u: uint32) =
+        u |> int
 
-module private Index =
+    let private least(a: int) (b: int) =
+        if a <= b
+        then a
+        else b
 
-    let private lastFile(folder: string) =
-        Directory.EnumerateFiles(folder)
-        |> Seq.map (Path.GetFileName >> UInt32.Parse)
-        |> Seq.max
+    let private lasti (list: 'a list) =
+        list.Length |> uint32
 
-    let private streams =
-        Directory.CreateDirectory(Config.StreamRoot).FullName
-        |> Directory.EnumerateDirectories
-        |> Seq.map (DirectoryInfo >> (fun stream -> (stream.Name, lastFile stream.FullName)))
-        |> dict
-        |> ConcurrentDictionary<string, uint32>
+    let private emptyStream (_: Stream) =
+        let list = []
+        let info = { Last=0u; List=list; Red=[]; IsEnd=true }
+        info
 
-    let private committed =
-        streams :> IEnumerable<KeyValuePair<string,uint32>>
-        |> Seq.map (fun kvp -> (kvp.Key, [kvp.Value]))
-        |> dict
-        |> ConcurrentDictionary<string, uint32 list>
+    let private initStream (content: string) (_: Stream) =
+        let entry = { Offset=0u; IsEnd=false;Error=null; Document=JRaw content }
+        let list = [ entry ]
+        let info = { Last=0u; List=list; Red=[]; IsEnd=false }
+        info
 
-    let private padWidth =
-        UInt32.MaxValue
-            .ToString()
-            .Length
+    let private appendStream (content: string) (_: Stream) (info: StreamInfo) =
+        let offset = lasti info.List
+        let entry = { Offset=offset; IsEnd=false;Error=null; Document=JRaw content }
+        let list = info.List @ [ entry ]
+        { Last=offset; List=list; Red=[]; IsEnd=false }
 
-    let private toFilename(i: uint32) =
-        i.ToString().PadLeft(padWidth, '0')
+    let private readStream (offset: uint32) (count: uint32) (_: Stream) (info: StreamInfo) =
+        let first = toi offset
+        let last  = first + (toi count)
+        let isEnd = last >= (toi info.Last)
+        let red   =
+            if first >= info.List.Length
+            then []
+            elif last >= info.List.Length
+            then info.List.GetSlice(Some first, None)
+            else info.List.GetSlice(Some first, Some last)
+        { info with Red=red; IsEnd=isEnd }
 
-    let toFilepath (stream: string) (index: uint32) =
-        let filename = toFilename index
-        Path.Combine(Config.StreamRoot, stream, filename)
+    let append (streams: Dictionary<Stream, StreamInfo>) (stream: string, content: string) = //async {
+        let result = Dict.addOrUpdate streams (stream, initStream content, appendStream content)
+        (stream, result.Last)
 
-    let next (stream: string) =
-        streams.AddOrUpdate(stream, 0u, fun _ current -> current + 1u)
+    let read (streams: Dictionary<Stream, StreamInfo>) (stream: string, offset: uint32, count: uint32) =
+        let result = Dict.addOrUpdate streams (stream, emptyStream, readStream offset count)
+        let next = result.Last + 1u
+        let last = result.Last
+        let red =
+            result.Red
+            |> List.map (fun s -> if s.Offset = last then {s with IsEnd=true} else s)
+            |> List.toArray
+        (stream, next, result.IsEnd, red)
 
-    let last (stream: string) =
-        match committed.TryGetValue(stream) with
-        | (true, list) -> if list.Length > 0 then list.[0] else 0u
-        | _ -> 0u
+module StreamHelpers =
 
-    let private compress(list: uint32 list) =
-        let sorted = List.sort list
-        let compressed =
-            list
-            |> List.sort
-            |> List.mapi (fun i offset -> if i = 0 then (offset, offset - 1u) else (offset, sorted.[i-1]))
-            |> List.skipWhile (fun (a,b) -> a - b = 1u)
-            |> List.map fst
+    type Message = SourceRequest * Control.AsyncReplyChannel<SourceResult>
 
-        match compressed with
-        | [] -> [List.last sorted]
-        | _ -> compressed
+    let makeWriter id =
+        let streams = Dictionary<Stream, StreamInfo>()
+        let writer = MailboxProcessor<Message>.Start(fun inbox ->
+            let rec messageLoop() = async{
+                let! request, channel = inbox.Receive()
+                let result =
+                    match request with
+                    | Append a -> Action.append streams a |> Appended
+                    | Read   r -> Action.read   streams r |> Red
 
-    let commit(stream: string) (offset: uint32) : unit =
-        committed.AddOrUpdate(stream, (fun _ -> [0u]), (fun _ list -> offset :: list |> compress)) |> ignore
+                channel.Reply result
 
-    let traverse(stream: string) (start: uint32) (max: uint32) =
-        seq {
-            let mutable count = 0u
-            let mutable current = start
-            let last = last(stream)
+                return! messageLoop()
+            }
+            messageLoop())
+        (id, writer)
 
-            while (count < max && current <= last) do
-                let filepath = toFilepath stream current
-                let isEnd = current = last
-                if File.Exists(filepath) then
-                    count <- count + 1u
-                    yield (isEnd, current, filepath)
-                current <- current + 1u
-        } |> Seq.toArray
+    let indexOf maxWriters stream =
+        let hash  = stream.GetHashCode()
+        let index = hash % maxWriters |> Math.Abs
+        index
 
-    let toEntry(isEnd: bool, index: uint32, filepath: string)  =
-        async {
-            match! FileIo.read filepath with
-            | Ok content    -> return {Offset=index; Document=JRaw content; IsEnd=isEnd; Error=null}
-            | Error message -> return {Offset=index; Document=null; IsEnd=isEnd; Error=message}
-        }
-
-module private StreamAction =
-
-    let Append(stream: string, content: string) = async {
-        let offset = Index.next(stream)
-        let filename = Index.toFilepath stream offset
-        let! result = FileIo.write filename content
-
-        Index.commit stream offset
-
-        return
-            match result with
-            | Ok _        -> Append  (stream, offset)
-            | Error error -> Failure (stream, error)
-    }
-
-    let Read(stream: string, offset: uint32, count: uint32) = async {
-        let! entries =
-            Index.traverse stream offset count
-            |> Array.map Index.toEntry
-            |> Async.Sequential
-
-        let last = Array.tryLast entries //indexes
-        let (isEnd, next) =
-            match last with
-            | Some entry -> (entry.IsEnd, entry.Offset + 1u)
-            | None -> (true, offset)
-
-        return Read (stream, next, isEnd, entries)
-    }
-
-module private StreamHelpers =
-
-    let streamOf (request: Request) =
+    let streamOf (request: SourceRequest) : Stream =
         match request with
-        | Request.Append (stream, _)    -> stream
-        | Request.Read   (stream, _, _) -> stream
+        | Append (stream, _)    -> stream
+        | Read   (stream, _, _) -> stream
 
 module Stream =
 
-    let post (request: Request) = async {
-        let! response =
-            match request with
-            | Request.Append a -> StreamAction.Append a
-            | Request.Read   r -> StreamAction.Read   r
+    open StreamHelpers
 
-        return response
+    let private writers =
+        seq {
+            // todo make new config value?
+            for id in [0 .. Config.StoreWriters - 1] do
+                yield makeWriter id
+        } |> dict
+
+    // let post = Source.post Io.Services
+    let post (request: SourceRequest) : Async<SourceResult> = async {
+        let stream = streamOf request
+        let index = indexOf Config.StoreWriters stream
+        let result =
+            writers.[index].PostAndAsyncReply (fun channel -> request, channel)
+
+        return! result
     }

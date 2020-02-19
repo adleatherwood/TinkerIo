@@ -3,7 +3,6 @@
 open Microsoft.AspNetCore.Mvc
 open TinkerIo.Crud
 
-
 [<ApiController>]
 [<Route("[controller]")>]
 type CacheController() =
