@@ -5,7 +5,8 @@ open TinkerIo.Crud
 open System.Collections.Concurrent
 
 module Io =
-    // todo no db level?
+
+    // todo use actor model
     let private documents = ConcurrentDictionary<string,string>()
 
     let location (db: string) (key: string) =
