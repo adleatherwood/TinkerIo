@@ -2,12 +2,18 @@ const http = require('http')
 const fs = require('fs');
 const Path = require('path');
 
-function deleteFolderRecursive(path) {
+function random(min, max) {
+    min = Math.ceil(min)
+    max = Math.floor(max + 1)
+    return Math.floor(Math.random() * (max - min)) + min
+}
+
+function deleteFolder(path) {
     if (fs.existsSync(path)) {
         fs.readdirSync(path).forEach((file, index) => {
             const curPath = Path.join(path, file);
             if (fs.lstatSync(curPath).isDirectory()) {
-                deleteFolderRecursive(curPath);
+                deleteFolder(curPath);
             } else {
                 fs.unlinkSync(curPath);
             }
@@ -15,10 +21,14 @@ function deleteFolderRecursive(path) {
         fs.rmdirSync(path);
     }
 }
+
 function api(method, path, content) {
     let chunks = []
     return new Promise((resolve, reject) => {
         var json = JSON.stringify(content, null, 2)
+        // console.log(method)
+        // console.log(path)
+        // console.log(json)
         var options = {
             host: 'localhost',
             port: 5000,
@@ -58,6 +68,7 @@ function api(method, path, content) {
 }
 
 module.exports = {
-    deleteFolderRecursive: deleteFolderRecursive,
+    random: random,
+    deleteFolder: deleteFolder,
     api: api
 }

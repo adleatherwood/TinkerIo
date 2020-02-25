@@ -1,36 +1,69 @@
 namespace TinkerIo.Store
 
 open System
+open TinkerIo
+open TinkerIo.Crud
+open System.IO
 
 type Db = string
 type Key = string
+type Hash = string
 type Content = string
 type HashCode = string
 
-type StoreRequest =
-    | Create  of (Db * Key * Content)
-    | Read    of (Db * Key)
-    | Replace of (Db * Key * Content)
-    | Update  of (Db * Key * Content * HashCode)
-    | Delete  of (Db * Key)
-    | Publish of (Db * Key * Content)
+module Io =
+
+    let location db key =
+        if String.IsNullOrWhiteSpace(db) || String.IsNullOrWhiteSpace(key)
+        then None
+        else Some <| Path.Combine(Config.StoreRoot, db, key)
+
+    let exists filename =
+        File.Exists filename
+
+    let read filename = async {
+        try
+            let! content = File.ReadAllTextAsync(filename) |> Async.AwaitTask
+            return Ok content
+        with
+        | e -> return Error e.Message
+    }
+
+    let rec write filename content = async {
+        try
+            File.WriteAllTextAsync(filename, content) |> Async.AwaitTask |> ignore
+            return Ok ()
+        with
+        | :? DirectoryNotFoundException ->
+            FileInfo(filename).DirectoryName |> Directory.CreateDirectory |> ignore
+            return! write filename content
+        | e -> return Error e.Message
+    }
+
+    let delete filename =
+        try
+            Ok <| File.Delete(filename)
+        with
+        | e -> Error e.Message
+
+    let Services : CrudIo = {
+        Location = location
+        Exists = exists
+        Write = write
+        Read = read
+        Delete = delete
+    }
+
 
 module private StoreHelpers =
 
-    type Message = StoreRequest * Control.AsyncReplyChannel<StoreResult>
+    type Message = CrudRequest * Control.AsyncReplyChannel<CrudResult>
 
     let makeWriter id =
         let writer = MailboxProcessor<Message>.Start(fun inbox ->
             let rec messageLoop() = async{
                 let! request, channel = inbox.Receive()
-                let! response =
-                    match request with
-                    | Create  c -> StoreAction.create  c
-                    | Read    r -> StoreAction.read    r
-                    | Replace r -> StoreAction.replace r
-                    | Update  u -> StoreAction.update  u
-                    | Delete  d -> StoreAction.delete  d
-                    | Publish p -> StoreAction.publish p
+                let! response = Crud.post Io.Services request
 
                 channel.Reply response
 
@@ -39,7 +72,7 @@ module private StoreHelpers =
             messageLoop())
         (id, writer)
 
-    let dbOf (request: StoreRequest) =
+    let dbOf (request: CrudRequest) =
         match request with
         | Create  (db, _, _)    -> db
         | Read    (db, _)       -> db
@@ -48,7 +81,7 @@ module private StoreHelpers =
         | Delete  (db, _)       -> db
         | Publish (db, _, _)    -> db
 
-    let keyOf (request: StoreRequest) =
+    let keyOf (request: CrudRequest) =
         match request with
         | Create  (_, key, _)    -> key
         | Read    (_, key)       -> key
@@ -65,7 +98,6 @@ module private StoreHelpers =
 module Store =
 
     open StoreHelpers
-    open TinkerIo
 
     let private writers =
         seq {
@@ -73,7 +105,7 @@ module Store =
                 yield makeWriter id
         } |> dict
 
-    let post (request: StoreRequest) = async {
+    let post (request: CrudRequest) = async {
         let db       = dbOf request
         let key      = keyOf request
         let index    = indexOf Config.StoreWriters db key

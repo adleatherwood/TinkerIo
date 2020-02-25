@@ -1,12 +1,12 @@
-const util = require("./util")
 const childProcess = require("child_process");
+const client = require("./client")
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-//util.deleteFolderRecursive ("../src/data")
+client.cache.clearAll()
 
-// spawn n producers & consumers
+childProcess.fork("view.js", [26 * 10])
 
-for (i = 0; i < 10; i++) {
-    childProcess.fork("producer.js", [alphabet[i]])
-    childProcess.fork("consumer.js", [alphabet[i]])
+for (i = 0; i < 26; i++) {
+    childProcess.fork("producer.js", [alphabet[i], "stream", 10])
+    childProcess.fork("consumer.js", [alphabet[i], "stream", 26 * 10])
 }

@@ -4,3 +4,5 @@
 **/bin
 **/obj
 **/data
+
+publish-to-pi.ps1
