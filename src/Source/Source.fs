@@ -60,6 +60,11 @@ type SourceIo<'a> = {
     Commit   : Stream -> Offset -> Unit
 }
 
+type SourceMessage = {
+    Success : bool
+    Message : string
+}
+
 module private Action =
 
     let traverse(io: SourceIo<'a>) (stream: string) (start: uint32) (max: uint32) =

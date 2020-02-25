@@ -1,5 +1,8 @@
 const childProcess = require("child_process");
+const client = require("./client")
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+client.cache.clearAll()
 
 childProcess.fork("view.js", [26 * 10])
 

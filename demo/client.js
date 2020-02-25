@@ -73,6 +73,11 @@ function crud(targetApi) {
 const store = crud("store")
 const cache = crud("cache")
 
+cache.clearAll = async function() {
+    const result = await util.api("POST", "/cache/clearAll")
+    return result
+}
+
 module.exports = {
     store: store,
     cache: cache,

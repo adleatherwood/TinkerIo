@@ -8,3 +8,10 @@ open TinkerIo.Source
 type StreamController() =
     inherit SourceController(Stream.post)
 
+    // todo
+    // [<HttpPost("clearAll")>]
+    // member __.ClearAll() = async {
+    //     Io.documents.Clear()
+
+    //     return {Success = true; Message = "Cached cleard";}
+    // }

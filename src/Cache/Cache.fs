@@ -7,7 +7,7 @@ open System.Collections.Concurrent
 module Io =
 
     // todo use actor model
-    let private documents = ConcurrentDictionary<string,string>()
+    let documents = ConcurrentDictionary<string,string>()
 
     let location (db: string) (key: string) =
         Some (db + key)

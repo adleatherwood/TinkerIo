@@ -53,6 +53,11 @@ type CrudResponse = {
     Document : JRaw
     }
 
+type CrudMessage = {
+    Success : bool
+    Message : string
+}
+
 module private CrudHelpers =
 
     let toSuccess key content =
