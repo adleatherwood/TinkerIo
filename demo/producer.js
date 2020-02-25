@@ -5,10 +5,10 @@ async function send(kind, document) {
     let result = null
 
     if (kind === "stream") {
-        result = await client.stream.append("test", document)
+        result = await client.stream.append("demo", document)
     }
     else if (kind === "topic") {
-        result = await client.topic.append("test", document)
+        result = await client.topic.append("demo", document)
     }
 
     return result
@@ -21,7 +21,7 @@ async function main(name, kind, count) {
 
         result.document = document
 
-        console.log("PRODUCER: " + name + "; SENT: " + JSON.stringify(result))
+        //console.log("PRODUCER: " + name + "; SENT: " + JSON.stringify(result))
     }
 }
 

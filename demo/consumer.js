@@ -7,7 +7,7 @@ let total = 0
 let i = 1;
 
 async function onEntry(entry) {
-    console.log("CONSUMER: " + name + "; RECV: " + JSON.stringify(entry))
+    //console.log("CONSUMER: " + name + "; RECV: " + JSON.stringify(entry))
 
     switch (entry.document.action) {
         case "add": { total += entry.document.amount }
@@ -15,15 +15,17 @@ async function onEntry(entry) {
 
     i++
 
+    client.cache.publish("demo", "total", { "total": total, "count": i })
+
     return i >= count
 }
 
 async function main(name, kind) {
     if (kind === "stream") {
-        await client.stream.consume("test", 10, onEntry)
+        await client.stream.consume("demo", 10, onEntry)
     }
     else if (kind === "topic") {
-        await client.topic.consume("test", 10, onEntry)
+        await client.topic.consume("demo", 10, onEntry)
     }
 
     setTimeout(() =>

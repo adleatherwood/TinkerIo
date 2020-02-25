@@ -60,8 +60,10 @@ function crud(targetApi) {
         },
         subscribe: async function (storeName, documentId, onDocument) {
             let quit = false
+            let hash = "0"
             while (!quit) {
                 const result = await util.api("GET", "/"+ this.targetApi +"/subscribe/"+ storeName +"/"+ documentId +"/" + hash)
+                hash = result.hash
                 quit = await onDocument(result)
             }
         }

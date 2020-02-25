@@ -61,7 +61,10 @@ type CrudController(post: Post) =
                     if value.Hash <> hash
                     then return Success value  |> Some
                     else return None
-                | Failure value -> return Failure value |> Some
+                | Failure value ->
+                    if value.Error.Contains("not exist") // todo super lame dude
+                    then return None
+                    else return Failure value |> Some
             })
 
         return Crud.toResponse result
