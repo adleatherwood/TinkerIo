@@ -34,7 +34,7 @@ module Action =
         let info = { Last=0u; List=list; Red=[]; IsEnd=true }
         info
 
-    let private initStream (content: string) (_: Stream) =
+    let private createStream (content: string) (_: Stream) =
         let entry = { Offset=0u; IsEnd=false;Error=null; Document=JRaw content }
         let list = [ entry ]
         let info = { Last=0u; List=list; Red=[]; IsEnd=false }
@@ -44,11 +44,11 @@ module Action =
         let offset = lasti info.List
         let entry = { Offset=offset; IsEnd=false;Error=null; Document=JRaw content }
         let list = info.List @ [ entry ]
-        { Last=offset; List=list; Red=[]; IsEnd=false }
+        { Last=lasti list; List=list; Red=[]; IsEnd=false }
 
     let private readStream (offset: uint32) (count: uint32) (_: Stream) (info: StreamInfo) =
         let first = toi offset
-        let last  = first + (toi count)
+        let last  = first + (toi count - 1)
         let isEnd = last >= (toi info.Last)
         let red   =
             if first >= info.List.Length
@@ -59,12 +59,12 @@ module Action =
         { info with Red=red; IsEnd=isEnd }
 
     let append (streams: Dictionary<Stream, StreamInfo>) (stream: string, content: string) = //async {
-        let result = Dict.addOrUpdate streams (stream, initStream content, appendStream content)
+        let result = Dict.addOrUpdate streams (stream, createStream content, appendStream content)
         (stream, result.Last)
 
     let read (streams: Dictionary<Stream, StreamInfo>) (stream: string, offset: uint32, count: uint32) =
         let result = Dict.addOrUpdate streams (stream, emptyStream, readStream offset count)
-        let next = result.Last + 1u
+        let next = result.Red |> List.tryLast |> Option.map (fun e -> e.Offset + 1u) |>  Option.defaultValue 0u
         let last = result.Last
         let red =
             result.Red
